@@ -27,6 +27,11 @@ REScheduleItem >> hasNextOccurrence [
 ]
 
 { #category : 'accessing' }
+REScheduleItem >> id [
+	^ id
+]
+
+{ #category : 'accessing' }
 REScheduleItem >> id: anObject [
 	id := anObject
 ]
