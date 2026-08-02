@@ -7,8 +7,8 @@ Class {
 		'endMonth',
 		'endDay'
 	],
-	#category : 'RecurringEvents-Common',
-	#package : 'RecurringEvents-Common'
+	#category : 'RecurringEvents-Core',
+	#package : 'RecurringEvents-Core'
 }
 
 { #category : 'testing' }

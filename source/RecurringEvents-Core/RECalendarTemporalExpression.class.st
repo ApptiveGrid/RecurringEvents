@@ -1,8 +1,8 @@
 Class {
 	#name : 'RECalendarTemporalExpression',
 	#superclass : 'RETemporalExpression',
-	#category : 'RecurringEvents-Common',
-	#package : 'RecurringEvents-Common'
+	#category : 'RecurringEvents-Core',
+	#package : 'RecurringEvents-Core'
 }
 
 { #category : 'as yet unclassified' }

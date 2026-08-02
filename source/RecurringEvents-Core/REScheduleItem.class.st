@@ -7,8 +7,8 @@ Class {
 		'temporalExpression',
 		'lastEvaluated'
 	],
-	#category : 'RecurringEvents-Common',
-	#package : 'RecurringEvents-Common'
+	#category : 'RecurringEvents-Core',
+	#package : 'RecurringEvents-Core'
 }
 
 { #category : 'accessing' }

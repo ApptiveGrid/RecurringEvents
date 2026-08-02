@@ -1,6 +1,6 @@
 Extension { #name : 'DateAndTime' }
 
-{ #category : '*recurringevents-common' }
+{ #category : '*recurringevents-core' }
 DateAndTime >> asTemporalExpression [
 	^ REDateAndTimeExpression new
 		dateAndTime: self

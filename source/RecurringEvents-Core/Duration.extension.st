@@ -1,6 +1,6 @@
 Extension { #name : 'Duration' }
 
-{ #category : '*recurringevents-common' }
+{ #category : '*recurringevents-core' }
 Duration >> asTemporalExpression [
 	^ REDurationExpression new
 		duration: self

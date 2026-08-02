@@ -7,8 +7,8 @@ Class {
 	#classInstVars : [
 		'delegate'
 	],
-	#category : 'RecurringEvents-Core',
-	#package : 'RecurringEvents-Core'
+	#category : 'RecurringEvents-Engine',
+	#package : 'RecurringEvents-Engine'
 }
 
 { #category : 'accessing' }

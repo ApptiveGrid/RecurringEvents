@@ -7,8 +7,8 @@ Class {
 		'schedule',
 		'valueBlock'
 	],
-	#category : 'RecurringEvents-Core',
-	#package : 'RecurringEvents-Core'
+	#category : 'RecurringEvents-Engine',
+	#package : 'RecurringEvents-Engine'
 }
 
 { #category : 'adding' }

@@ -1,8 +1,8 @@
 Class {
 	#name : 'RETemporalExpression',
 	#superclass : 'Object',
-	#category : 'RecurringEvents-Common',
-	#package : 'RecurringEvents-Common'
+	#category : 'RecurringEvents-Core',
+	#package : 'RecurringEvents-Core'
 }
 
 { #category : 'testing' }
