@@ -10,6 +10,32 @@ Class {
 	#package : 'RecurringEvents-Core'
 }
 
+{ #category : 'json' }
+REDayInMonthExpression class >> fromJsonDict: aDict [
+	^ (aDict includesKey: 'day')
+		ifTrue: [ self new day: (aDict at: 'day') ]
+		ifFalse: [
+			self new
+				ordinal: (aDict at: 'ordinal')
+				weekday: (self symbolForJsonName: (aDict at: 'weekday')) ]
+]
+
+{ #category : 'json' }
+REDayInMonthExpression >> asJsonDict [
+	^ day
+		ifNotNil: [
+			Dictionary new
+				at: 'type' put: 'dayInMonth';
+				at: 'day' put: day;
+				yourself ]
+		ifNil: [
+			Dictionary new
+				at: 'type' put: 'dayInMonth';
+				at: 'ordinal' put: ordinal;
+				at: 'weekday' put: (self class jsonNameFor: weekday);
+				yourself ]
+]
+
 { #category : 'accessing' }
 REDayInMonthExpression >> day: anInteger [
 	"Matches a fixed calendar day number of the month, e.g. 1 for the 1st.

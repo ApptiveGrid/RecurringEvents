@@ -8,6 +8,19 @@ Class {
 	#package : 'RecurringEvents-Core'
 }
 
+{ #category : 'json' }
+REDayInWeekExpression class >> fromJsonDict: aDict [
+	^ self new weekdays: ((aDict at: 'weekdays') collect: [ :each | self symbolForJsonName: each ])
+]
+
+{ #category : 'json' }
+REDayInWeekExpression >> asJsonDict [
+	^ Dictionary new
+		at: 'type' put: 'dayInWeek';
+		at: 'weekdays' put: (weekdays collect: [ :each | self class jsonNameFor: each ]) asArray;
+		yourself
+]
+
 { #category : 'testing' }
 REDayInWeekExpression >> includes: aDateAndTime [
 	^ weekdays includes: aDateAndTime dayOfWeekName

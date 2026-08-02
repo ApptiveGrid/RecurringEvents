@@ -8,6 +8,19 @@ Class {
 	#package : 'RecurringEvents-Core'
 }
 
+{ #category : 'json' }
+REMonthInYearExpression class >> fromJsonDict: aDict [
+	^ self new months: ((aDict at: 'months') collect: [ :each | self symbolForJsonName: each ])
+]
+
+{ #category : 'json' }
+REMonthInYearExpression >> asJsonDict [
+	^ Dictionary new
+		at: 'type' put: 'monthInYear';
+		at: 'months' put: (months collect: [ :each | self class jsonNameFor: each ]) asArray;
+		yourself
+]
+
 { #category : 'testing' }
 REMonthInYearExpression >> includes: aDateAndTime [
 	^ months includes: aDateAndTime monthName

@@ -9,6 +9,23 @@ Class {
 	#package : 'RecurringEvents-Core'
 }
 
+{ #category : 'json' }
+REDurationExpression class >> fromJsonDict: aDict [
+	^ self new
+		duration: (Duration fromISO8601Duration: (aDict at: 'every'));
+		start: (DateAndTime fromString: (aDict at: 'start'));
+		yourself
+]
+
+{ #category : 'json' }
+REDurationExpression >> asJsonDict [
+	^ Dictionary new
+		at: 'type' put: 'duration';
+		at: 'start' put: start asString;
+		at: 'every' put: duration asISO8601Duration;
+		yourself
+]
+
 { #category : 'accessing' }
 REDurationExpression >> duration: anObject [
 	duration := anObject
@@ -37,4 +54,14 @@ REDurationExpression >> printOn: aStream [
 	aStream
 		nextPutAll: 'every ';
 		nextPutAll: duration asString
+]
+
+{ #category : 'accessing' }
+REDurationExpression >> start [
+	^ start
+]
+
+{ #category : 'accessing' }
+REDurationExpression >> start: aDateAndTime [
+	start := aDateAndTime
 ]

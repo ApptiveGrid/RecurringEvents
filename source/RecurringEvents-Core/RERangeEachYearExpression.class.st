@@ -11,6 +11,27 @@ Class {
 	#package : 'RecurringEvents-Core'
 }
 
+{ #category : 'json' }
+RERangeEachYearExpression class >> fromJsonDict: aDict [
+	| startDict endDict |
+	startDict := aDict at: 'start'.
+	endDict := aDict at: 'end'.
+	^ self new
+		startMonth: (startDict at: 'month')
+		startDay: (startDict at: 'day')
+		endMonth: (endDict at: 'month')
+		endDay: (endDict at: 'day')
+]
+
+{ #category : 'json' }
+RERangeEachYearExpression >> asJsonDict [
+	^ Dictionary new
+		at: 'type' put: 'rangeEachYear';
+		at: 'start' put: (Dictionary new at: 'month' put: startMonth; at: 'day' put: startDay; yourself);
+		at: 'end' put: (Dictionary new at: 'month' put: endMonth; at: 'day' put: endDay; yourself);
+		yourself
+]
+
 { #category : 'testing' }
 RERangeEachYearExpression >> includes: aDateAndTime [
 	| m d wrapsAcrossYear |

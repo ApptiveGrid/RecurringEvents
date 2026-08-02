@@ -8,6 +8,19 @@ Class {
 	#package : 'RecurringEvents-Core'
 }
 
+{ #category : 'json' }
+REIntersectionTemporalExpression class >> fromJsonDict: aDict [
+	^ self new expressions: ((aDict at: 'expressions') collect: [ :each | RETemporalExpression fromJsonDict: each ])
+]
+
+{ #category : 'json' }
+REIntersectionTemporalExpression >> asJsonDict [
+	^ Dictionary new
+		at: 'type' put: 'intersection';
+		at: 'expressions' put: (expressions collect: [ :each | each asJsonDict ]) asArray;
+		yourself
+]
+
 { #category : 'accessing' }
 REIntersectionTemporalExpression >> expressions [
 	^ expressions

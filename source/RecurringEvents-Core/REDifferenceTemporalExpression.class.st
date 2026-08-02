@@ -9,6 +9,23 @@ Class {
 	#package : 'RecurringEvents-Core'
 }
 
+{ #category : 'json' }
+REDifferenceTemporalExpression class >> fromJsonDict: aDict [
+	^ self new
+		included: (RETemporalExpression fromJsonDict: (aDict at: 'included'));
+		excluded: (RETemporalExpression fromJsonDict: (aDict at: 'excluded'));
+		yourself
+]
+
+{ #category : 'json' }
+REDifferenceTemporalExpression >> asJsonDict [
+	^ Dictionary new
+		at: 'type' put: 'difference';
+		at: 'included' put: included asJsonDict;
+		at: 'excluded' put: excluded asJsonDict;
+		yourself
+]
+
 { #category : 'accessing' }
 REDifferenceTemporalExpression >> excluded [
 	^ excluded
