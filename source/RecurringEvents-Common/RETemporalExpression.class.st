@@ -1,0 +1,21 @@
+Class {
+	#name : 'RETemporalExpression',
+	#superclass : 'Object',
+	#category : 'RecurringEvents-Common',
+	#package : 'RecurringEvents-Common'
+}
+
+{ #category : 'testing' }
+RETemporalExpression >> includes: aDateAndTime [
+	^ self subclassResponsibility
+]
+
+{ #category : 'accessing' }
+RETemporalExpression >> nextOccurrence [
+	^ self nextOccurrenceAfter: nil
+]
+
+{ #category : 'as yet unclassified' }
+RETemporalExpression >> nextOccurrenceAfter: aDateAndTime [
+	self subclassResponsibility
+]
