@@ -1,0 +1,189 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/ApptiveGrid/RecurringEvents/main/schema/recurring-events.schema.json",
+  "title": "RecurringEvents Temporal Expression",
+  "description": "A recurring-event rule, implementing Martin Fowler's \"Recurring Events for Calendars\" pattern (Fowler & Yoder, PLoP 1997). Every node is discriminated by its `type` field. Matches the RETemporalExpression class hierarchy in RecurringEvents-Core one-to-one; produced/consumed by RETemporalExpression>>asJsonString / class>>fromJsonString:.",
+  "$ref": "#/$defs/temporalExpression",
+  "$defs": {
+    "temporalExpression": {
+      "oneOf": [
+        { "$ref": "#/$defs/dateAndTime" },
+        { "$ref": "#/$defs/duration" },
+        { "$ref": "#/$defs/dayInWeek" },
+        { "$ref": "#/$defs/monthInYear" },
+        { "$ref": "#/$defs/dayInMonth" },
+        { "$ref": "#/$defs/rangeEachYear" },
+        { "$ref": "#/$defs/union" },
+        { "$ref": "#/$defs/intersection" },
+        { "$ref": "#/$defs/difference" }
+      ]
+    },
+
+    "dateAndTime": {
+      "description": "A single, fixed occurrence. Maps to REDateAndTimeExpression.",
+      "type": "object",
+      "properties": {
+        "type": { "const": "dateAndTime" },
+        "at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["type", "at"],
+      "additionalProperties": false
+    },
+
+    "duration": {
+      "description": "Recurs indefinitely every fixed elapsed duration starting at `start`. Maps to REDurationExpression. `every` is an ISO 8601 duration restricted to the day/hour/minute/second units (no Y/M calendar units, which are ambiguous as a fixed elapsed duration - use the calendar expressions below for those).",
+      "type": "object",
+      "properties": {
+        "type": { "const": "duration" },
+        "start": { "type": "string", "format": "date-time" },
+        "every": { "type": "string", "pattern": "^P(\\d+D)?(T(\\d+H)?(\\d+M)?(\\d+S)?)?$" }
+      },
+      "required": ["type", "start", "every"],
+      "additionalProperties": false
+    },
+
+    "weekday": {
+      "type": "string",
+      "enum": ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
+    },
+
+    "month": {
+      "type": "string",
+      "enum": [
+        "january", "february", "march", "april", "may", "june",
+        "july", "august", "september", "october", "november", "december"
+      ]
+    },
+
+    "dayInWeek": {
+      "description": "Includes every date whose weekday is in the set, e.g. \"every Monday and Wednesday\". Maps to REDayInWeekExpression.",
+      "type": "object",
+      "properties": {
+        "type": { "const": "dayInWeek" },
+        "weekdays": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/weekday" },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      },
+      "required": ["type", "weekdays"],
+      "additionalProperties": false
+    },
+
+    "monthInYear": {
+      "description": "Includes every date whose month is in the set, e.g. \"June, July, August\". Maps to REMonthInYearExpression.",
+      "type": "object",
+      "properties": {
+        "type": { "const": "monthInYear" },
+        "months": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/month" },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      },
+      "required": ["type", "months"],
+      "additionalProperties": false
+    },
+
+    "dayInMonth": {
+      "description": "Two mutually exclusive modes, matching REDayInMonthExpression. `day` mode: a fixed calendar day number, e.g. 1 for \"the 1st\"; negative counts from month end (-1 = last day). `ordinal`+`weekday` mode: the nth occurrence of a weekday in the month, e.g. ordinal 4 + weekday thursday for \"the 4th Thursday\" (Thanksgiving); negative ordinal counts from month end (-1 = \"the last Monday\", Memorial Day).",
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "type": { "const": "dayInMonth" },
+            "day": {
+              "type": "integer",
+              "minimum": -31,
+              "maximum": 31,
+              "not": { "const": 0 }
+            }
+          },
+          "required": ["type", "day"],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": { "const": "dayInMonth" },
+            "ordinal": {
+              "type": "integer",
+              "minimum": -5,
+              "maximum": 5,
+              "not": { "const": 0 }
+            },
+            "weekday": { "$ref": "#/$defs/weekday" }
+          },
+          "required": ["type", "ordinal", "weekday"],
+          "additionalProperties": false
+        }
+      ]
+    },
+
+    "monthDay": {
+      "type": "object",
+      "properties": {
+        "month": { "type": "integer", "minimum": 1, "maximum": 12 },
+        "day": { "type": "integer", "minimum": 1, "maximum": 31 }
+      },
+      "required": ["month", "day"],
+      "additionalProperties": false
+    },
+
+    "rangeEachYear": {
+      "description": "Includes every date within a month/day range, recurring every year. If `start` is later in the year than `end` (e.g. December 15 to January 15), the range wraps across the year boundary. Maps to RERangeEachYearExpression.",
+      "type": "object",
+      "properties": {
+        "type": { "const": "rangeEachYear" },
+        "start": { "$ref": "#/$defs/monthDay" },
+        "end": { "$ref": "#/$defs/monthDay" }
+      },
+      "required": ["type", "start", "end"],
+      "additionalProperties": false
+    },
+
+    "union": {
+      "description": "Includes a date if ANY of the sub-expressions includes it. Maps to REUnionTemporalExpression.",
+      "type": "object",
+      "properties": {
+        "type": { "const": "union" },
+        "expressions": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/temporalExpression" },
+          "minItems": 1
+        }
+      },
+      "required": ["type", "expressions"],
+      "additionalProperties": false
+    },
+
+    "intersection": {
+      "description": "Includes a date if ALL of the sub-expressions include it. Maps to REIntersectionTemporalExpression. Composing monthInYear + dayInMonth this way expresses e.g. Thanksgiving (4th Thursday of November) or Memorial Day (last Monday of May).",
+      "type": "object",
+      "properties": {
+        "type": { "const": "intersection" },
+        "expressions": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/temporalExpression" },
+          "minItems": 1
+        }
+      },
+      "required": ["type", "expressions"],
+      "additionalProperties": false
+    },
+
+    "difference": {
+      "description": "Includes a date if `included` includes it AND `excluded` does not, e.g. \"every Monday, except holidays\". Maps to REDifferenceTemporalExpression.",
+      "type": "object",
+      "properties": {
+        "type": { "const": "difference" },
+        "included": { "$ref": "#/$defs/temporalExpression" },
+        "excluded": { "$ref": "#/$defs/temporalExpression" }
+      },
+      "required": ["type", "included", "excluded"],
+      "additionalProperties": false
+    }
+  }
+}
