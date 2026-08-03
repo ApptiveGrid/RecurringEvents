@@ -154,7 +154,8 @@
         "type": { "const": "interval" },
         "start": { "type": "string", "format": "date-time" },
         "unit": { "type": "string", "enum": ["week", "month", "year"] },
-        "interval": { "type": "integer", "minimum": 1 }
+        "interval": { "type": "integer", "minimum": 1 },
+        "wkst": { "$ref": "#/$defs/weekday" }
       },
       "required": ["type", "start", "unit", "interval"],
       "additionalProperties": false
