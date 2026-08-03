@@ -84,6 +84,17 @@ RETemporalExpressionJsonTest >> testIntersectionRoundTrip [
 ]
 
 { #category : 'tests' }
+RETemporalExpressionJsonTest >> testIntervalRoundTrip [
+	| start expr roundtripped |
+	start := DateAndTime year: 2026 month: 1 day: 1.
+	expr := REIntervalExpression new start: start unit: #month interval: 3.
+	roundtripped := RETemporalExpression fromJsonString: expr asJsonString.
+	self assert: roundtripped class equals: REIntervalExpression.
+	self assert: (roundtripped includes: (DateAndTime year: 2026 month: 4 day: 1)).
+	self deny: (roundtripped includes: (DateAndTime year: 2026 month: 2 day: 1))
+]
+
+{ #category : 'tests' }
 RETemporalExpressionJsonTest >> testMonthInYearRoundTrip [
 	| expr roundtripped |
 	expr := REMonthInYearExpression new months: #(#June #July #August).

@@ -15,6 +15,7 @@ RETemporalExpression class >> fromJsonDict: aDict [
 	type = 'monthInYear' ifTrue: [ ^ REMonthInYearExpression fromJsonDict: aDict ].
 	type = 'dayInMonth' ifTrue: [ ^ REDayInMonthExpression fromJsonDict: aDict ].
 	type = 'rangeEachYear' ifTrue: [ ^ RERangeEachYearExpression fromJsonDict: aDict ].
+	type = 'interval' ifTrue: [ ^ REIntervalExpression fromJsonDict: aDict ].
 	type = 'union' ifTrue: [ ^ REUnionTemporalExpression fromJsonDict: aDict ].
 	type = 'intersection' ifTrue: [ ^ REIntersectionTemporalExpression fromJsonDict: aDict ].
 	type = 'difference' ifTrue: [ ^ REDifferenceTemporalExpression fromJsonDict: aDict ].
