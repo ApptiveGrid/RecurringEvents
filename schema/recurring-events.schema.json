@@ -16,6 +16,8 @@
         { "$ref": "#/$defs/interval" },
         { "$ref": "#/$defs/absoluteRange" },
         { "$ref": "#/$defs/setPosition" },
+        { "$ref": "#/$defs/dayInYear" },
+        { "$ref": "#/$defs/weekInYear" },
         { "$ref": "#/$defs/union" },
         { "$ref": "#/$defs/intersection" },
         { "$ref": "#/$defs/difference" }
@@ -187,6 +189,36 @@
         }
       },
       "required": ["type", "candidate", "period", "positions"],
+      "additionalProperties": false
+    },
+
+    "dayInYear": {
+      "description": "RFC 5545 BYYEARDAY: includes every date whose day-of-year is in `days`. Values are 1-366; negative counts from the end of the year (-1 = the last day of the year, Dec 31 or Dec 30 depending on leap year). Maps to REDayInYearExpression.",
+      "type": "object",
+      "properties": {
+        "type": { "const": "dayInYear" },
+        "days": {
+          "type": "array",
+          "items": { "type": "integer", "minimum": -366, "maximum": 366, "not": { "const": 0 } },
+          "minItems": 1
+        }
+      },
+      "required": ["type", "days"],
+      "additionalProperties": false
+    },
+
+    "weekInYear": {
+      "description": "RFC 5545 BYWEEKNO: includes every date whose ISO 8601 week number is in `weeks`. Values are 1-53; negative counts from the end of the ISO week-year (-1 = that years last ISO week, 52 or 53 depending on the year). Uses plain ISO 8601 week numbering (Monday-start weeks, week 1 contains the years first Thursday), independent of any WKST setting - none of the three major calendar tools implement BYWEEKNO at all, so there is no interop pressure to parameterize this further. Maps to REWeekInYearExpression.",
+      "type": "object",
+      "properties": {
+        "type": { "const": "weekInYear" },
+        "weeks": {
+          "type": "array",
+          "items": { "type": "integer", "minimum": -53, "maximum": 53, "not": { "const": 0 } },
+          "minItems": 1
+        }
+      },
+      "required": ["type", "weeks"],
       "additionalProperties": false
     },
 
