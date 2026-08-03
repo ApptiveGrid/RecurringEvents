@@ -137,6 +137,17 @@ RETemporalExpressionJsonTest >> testRangeEachYearRoundTrip [
 ]
 
 { #category : 'tests' }
+RETemporalExpressionJsonTest >> testSetPositionRoundTrip [
+	| weekdays expr roundtripped |
+	weekdays := REDayInWeekExpression new weekdays: #(#Monday #Tuesday #Wednesday #Thursday #Friday).
+	expr := RESetPositionExpression new candidate: weekdays period: #month positions: #(-1).
+	roundtripped := RETemporalExpression fromJsonString: expr asJsonString.
+	self assert: roundtripped class equals: RESetPositionExpression.
+	self assert: (roundtripped includes: (DateAndTime year: 2026 month: 2 day: 27)).
+	self deny: (roundtripped includes: (DateAndTime year: 2026 month: 2 day: 28))
+]
+
+{ #category : 'tests' }
 RETemporalExpressionJsonTest >> testThanksgivingRoundTrip [
 	"Fowler's own worked example, round-tripped through JSON to validate the format
 	handles real compositions, not just single nodes."
