@@ -15,6 +15,7 @@
         { "$ref": "#/$defs/rangeEachYear" },
         { "$ref": "#/$defs/interval" },
         { "$ref": "#/$defs/absoluteRange" },
+        { "$ref": "#/$defs/setPosition" },
         { "$ref": "#/$defs/union" },
         { "$ref": "#/$defs/intersection" },
         { "$ref": "#/$defs/difference" }
@@ -168,6 +169,23 @@
         "to": { "type": "string", "format": "date-time" }
       },
       "required": ["type"],
+      "additionalProperties": false
+    },
+
+    "setPosition": {
+      "description": "RFC 5545 BYSETPOS, generalized: within each calendar `period` (month or year) containing a date, take the dates where `candidate` includes them, in ascending order; includes a date iff its 1-based position in that list (or its negative, from-the-end position, e.g. -1 = last) is in `positions`. More general than the fixed ordinal+weekday mode in `dayInMonth` - e.g. candidate = weekdays, period = year, positions = [2, -1] means the 2nd AND the last weekday of the year. Maps to RESetPositionExpression.",
+      "type": "object",
+      "properties": {
+        "type": { "const": "setPosition" },
+        "candidate": { "$ref": "#/$defs/temporalExpression" },
+        "period": { "type": "string", "enum": ["month", "year"] },
+        "positions": {
+          "type": "array",
+          "items": { "type": "integer", "minimum": -366, "maximum": 366, "not": { "const": 0 } },
+          "minItems": 1
+        }
+      },
+      "required": ["type", "candidate", "period", "positions"],
       "additionalProperties": false
     },
 
