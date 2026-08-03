@@ -6,6 +6,28 @@ Class {
 }
 
 { #category : 'tests' }
+RETemporalExpressionJsonTest >> testAbsoluteRangeRoundTrip [
+	| expr roundtripped from to |
+	from := DateAndTime year: 2026 month: 1 day: 1.
+	to := DateAndTime year: 2026 month: 6 day: 1.
+	expr := REAbsoluteRangeExpression new from: from to: to.
+	roundtripped := RETemporalExpression fromJsonString: expr asJsonString.
+	self assert: roundtripped class equals: REAbsoluteRangeExpression.
+	self assert: (roundtripped includes: (DateAndTime year: 2026 month: 3 day: 1)).
+	self deny: (roundtripped includes: to)
+]
+
+{ #category : 'tests' }
+RETemporalExpressionJsonTest >> testAbsoluteRangeRoundTripWithOpenBound [
+	| expr roundtripped from |
+	from := DateAndTime year: 2026 month: 6 day: 1.
+	expr := REAbsoluteRangeExpression new from: from to: nil.
+	roundtripped := RETemporalExpression fromJsonString: expr asJsonString.
+	self assert: roundtripped from equals: from.
+	self assert: roundtripped to equals: nil
+]
+
+{ #category : 'tests' }
 RETemporalExpressionJsonTest >> testDateAndTimeRoundTrip [
 	| expr roundtripped date |
 	date := DateAndTime year: 2026 month: 8 day: 2.
