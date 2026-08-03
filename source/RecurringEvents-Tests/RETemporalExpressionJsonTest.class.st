@@ -69,6 +69,16 @@ RETemporalExpressionJsonTest >> testDayInWeekRoundTrip [
 ]
 
 { #category : 'tests' }
+RETemporalExpressionJsonTest >> testDayInYearRoundTrip [
+	| expr roundtripped |
+	expr := REDayInYearExpression new days: #(1 -1).
+	roundtripped := RETemporalExpression fromJsonString: expr asJsonString.
+	self assert: roundtripped class equals: REDayInYearExpression.
+	self assert: (roundtripped includes: (DateAndTime year: 2026 month: 12 day: 31)).
+	self deny: (roundtripped includes: (DateAndTime year: 2026 month: 6 day: 1))
+]
+
+{ #category : 'tests' }
 RETemporalExpressionJsonTest >> testDifferenceRoundTrip [
 	| every2 every3 base diff roundtripped |
 	base := DateAndTime year: 2026 month: 1 day: 1.
@@ -199,4 +209,13 @@ RETemporalExpressionJsonTest >> testUnionRoundTrip [
 RETemporalExpressionJsonTest >> testUnknownTypeRaisesError [
 	self should: [ RETemporalExpression fromJsonDict: (Dictionary new at: 'type' put: 'bogus'; yourself) ]
 		raise: Error
+]
+
+{ #category : 'tests' }
+RETemporalExpressionJsonTest >> testWeekInYearRoundTrip [
+	| expr roundtripped |
+	expr := REWeekInYearExpression new weeks: #(-1).
+	roundtripped := RETemporalExpression fromJsonString: expr asJsonString.
+	self assert: roundtripped class equals: REWeekInYearExpression.
+	self assert: (roundtripped includes: (DateAndTime year: 2026 month: 12 day: 28))
 ]
