@@ -52,6 +52,92 @@ RETemporalExpression class >> addRRuleUnionPart: aUnion to: parts [
 	self error: 'Cannot represent this Union as RRULE'
 ]
 
+{ #category : 'rrule' }
+RETemporalExpression class >> applyExceptions: aBaseExpression exdates: exdateCollection rdates: rdateCollection [
+	| result |
+	result := aBaseExpression.
+	(exdateCollection notNil and: [ exdateCollection notEmpty ]) ifTrue: [
+		| excluded |
+		excluded := exdateCollection size = 1
+			ifTrue: [ REDateAndTimeExpression new dateAndTime: exdateCollection first ]
+			ifFalse: [ REUnionTemporalExpression new expressions: (exdateCollection collect: [ :d | REDateAndTimeExpression new dateAndTime: d ]) asArray ].
+		result := REDifferenceTemporalExpression new included: result; excluded: excluded; yourself ].
+	(rdateCollection notNil and: [ rdateCollection notEmpty ]) ifTrue: [
+		| extra |
+		extra := (rdateCollection collect: [ :d | REDateAndTimeExpression new dateAndTime: d ]) asArray.
+		result := REUnionTemporalExpression new expressions: ({ result } , extra) ].
+	^ result
+]
+
+{ #category : 'icalendar' }
+RETemporalExpression class >> extractICalendarExceptionsFrom: anExpression [
+	"Inverse of applyExceptions:exdates:rdates: - returns {ruleExpression. exdates. rdates}."
+	| current exdates rdates |
+	current := anExpression.
+	rdates := OrderedCollection new.
+	(current isKindOf: REUnionTemporalExpression) ifTrue: [
+		| subs |
+		subs := current expressions.
+		(subs size > 1 and: [ (subs allButFirst) allSatisfy: [ :e | e isKindOf: REDateAndTimeExpression ] ]) ifTrue: [
+			rdates addAll: (subs allButFirst collect: [ :e | e dateAndTime ]).
+			current := subs first ] ].
+	exdates := OrderedCollection new.
+	(current isKindOf: REDifferenceTemporalExpression) ifTrue: [
+		| excluded |
+		excluded := current excluded.
+		(excluded isKindOf: REDateAndTimeExpression) ifTrue: [
+			exdates add: excluded dateAndTime.
+			current := current included ].
+		((excluded isKindOf: REUnionTemporalExpression) and: [ excluded expressions allSatisfy: [ :e | e isKindOf: REDateAndTimeExpression ] ]) ifTrue: [
+			exdates addAll: (excluded expressions collect: [ :e | e dateAndTime ]).
+			current := current included ] ].
+	^ { current. exdates. rdates }
+]
+
+{ #category : 'icalendar' }
+RETemporalExpression class >> formatICalendarDateTime: aDateAndTime [
+	^ String streamContents: [ :s |
+		s
+			print: aDateAndTime year;
+			nextPutAll: (self twoDigits: aDateAndTime month);
+			nextPutAll: (self twoDigits: aDateAndTime dayOfMonth);
+			nextPutAll: 'T';
+			nextPutAll: (self twoDigits: aDateAndTime hour);
+			nextPutAll: (self twoDigits: aDateAndTime minute);
+			nextPutAll: (self twoDigits: aDateAndTime second truncated) ]
+]
+
+{ #category : 'icalendar' }
+RETemporalExpression class >> fromICalendarString: aString [
+	"Parses a full .ics text blob (a bare VEVENT block, or a whole VCALENDAR containing one -
+	any VTIMEZONE/other surrounding components are ignored) into our tree. Uses only the first
+	VEVENT found; RecurringEvents models one recurring rule, not a whole calendar."
+	| lines beginIndex endIndex dtstart rruleValue exdates rdates base |
+	lines := (self unfoldICalendarLines: aString) asArray.
+	beginIndex := lines indexOf: 'BEGIN:VEVENT'.
+	beginIndex = 0 ifTrue: [ self error: 'No VEVENT block found' ].
+	endIndex := lines indexOf: 'END:VEVENT' startingAt: beginIndex.
+	endIndex = 0 ifTrue: [ self error: 'VEVENT block has no END:VEVENT' ].
+
+	dtstart := nil. rruleValue := nil.
+	exdates := OrderedCollection new.
+	rdates := OrderedCollection new.
+	(beginIndex + 1 to: endIndex - 1) do: [ :i |
+		| parsed name value |
+		parsed := self parseICalendarPropertyLine: (lines at: i).
+		name := parsed first. value := parsed second.
+		name = 'DTSTART' ifTrue: [ dtstart := self parseICalendarDateTime: value ].
+		name = 'RRULE' ifTrue: [ rruleValue := value ].
+		name = 'EXDATE' ifTrue: [ exdates addAll: ((value substrings: ',') collect: [ :v | self parseICalendarDateTime: v ]) ].
+		name = 'RDATE' ifTrue: [ rdates addAll: ((value substrings: ',') collect: [ :v | self parseICalendarDateTime: v ]) ] ].
+
+	dtstart ifNil: [ self error: 'VEVENT has no DTSTART' ].
+	base := rruleValue
+		ifNotNil: [ self fromRRuleString: rruleValue dtstart: dtstart ]
+		ifNil: [ REDateAndTimeExpression new dateAndTime: dtstart ].
+	^ self applyExceptions: base exdates: exdates rdates: rdates
+]
+
 { #category : 'json' }
 RETemporalExpression class >> fromJsonDict: aDict [
 	| type |
@@ -170,19 +256,7 @@ RETemporalExpression class >> fromRRuleString: aString dtstart: aDateAndTime exd
 	"EXDATE/RDATE are their own VEVENT properties, not part of the RRULE string - map them onto
 	our existing Difference/Union primitives at the top level, exactly as noted in the roadmap
 	(no new class needed for this, unlike the RRULE value itself)."
-	| result |
-	result := self fromRRuleString: aString dtstart: aDateAndTime.
-	(exdateCollection notNil and: [ exdateCollection notEmpty ]) ifTrue: [
-		| excluded |
-		excluded := exdateCollection size = 1
-			ifTrue: [ REDateAndTimeExpression new dateAndTime: exdateCollection first ]
-			ifFalse: [ REUnionTemporalExpression new expressions: (exdateCollection collect: [ :d | REDateAndTimeExpression new dateAndTime: d ]) asArray ].
-		result := REDifferenceTemporalExpression new included: result; excluded: excluded; yourself ].
-	(rdateCollection notNil and: [ rdateCollection notEmpty ]) ifTrue: [
-		| extra |
-		extra := (rdateCollection collect: [ :d | REDateAndTimeExpression new dateAndTime: d ]) asArray.
-		result := REUnionTemporalExpression new expressions: ({ result } , extra) ].
-	^ result
+	^ self applyExceptions: (self fromRRuleString: aString dtstart: aDateAndTime) exdates: exdateCollection rdates: rdateCollection
 ]
 
 { #category : 'rrule' }
@@ -220,6 +294,36 @@ RETemporalExpression class >> parseByDayEntry: aString [
 	code := aString last: 2.
 	ordinalPart := aString copyFrom: 1 to: aString size - 2.
 	^ { ordinalPart isEmpty ifTrue: [ nil ] ifFalse: [ ordinalPart asInteger ]. self weekdayForRRuleDayCode: code }
+]
+
+{ #category : 'icalendar' }
+RETemporalExpression class >> parseICalendarDateTime: aString [
+	"Parses a DATE (YYYYMMDD) or DATE-TIME (YYYYMMDDTHHMMSS[Z]) value into a naive DateAndTime -
+	the trailing Z (UTC marker) and any TZID parameter are both ignored, same naive-datetime
+	stance as the rest of this library (see backlog)."
+	| s |
+	s := (aString notEmpty and: [ aString last = $Z ])
+		ifTrue: [ aString copyFrom: 1 to: aString size - 1 ]
+		ifFalse: [ aString ].
+	s size = 8 ifTrue: [
+		^ DateAndTime year: (s copyFrom: 1 to: 4) asInteger month: (s copyFrom: 5 to: 6) asInteger day: (s copyFrom: 7 to: 8) asInteger ].
+	^ DateAndTime
+		year: (s copyFrom: 1 to: 4) asInteger month: (s copyFrom: 5 to: 6) asInteger day: (s copyFrom: 7 to: 8) asInteger
+		hour: (s copyFrom: 10 to: 11) asInteger minute: (s copyFrom: 12 to: 13) asInteger second: (s copyFrom: 14 to: 15) asInteger
+]
+
+{ #category : 'icalendar' }
+RETemporalExpression class >> parseICalendarPropertyLine: aLine [
+	"Returns {NAME (uppercase, params stripped). VALUE}. Ignores parameters (e.g. TZID) - we
+	only ever parse the naive date/time components, consistent with the rest of this library
+	not handling timezones at all (see backlog)."
+	| colonIndex head value semicolonIndex name |
+	colonIndex := aLine indexOf: $:.
+	head := aLine copyFrom: 1 to: colonIndex - 1.
+	value := aLine copyFrom: colonIndex + 1 to: aLine size.
+	semicolonIndex := head indexOf: $;.
+	name := semicolonIndex = 0 ifTrue: [ head ] ifFalse: [ head copyFrom: 1 to: semicolonIndex - 1 ].
+	^ { name asUppercase. value }
 ]
 
 { #category : 'rrule' }
@@ -307,6 +411,23 @@ RETemporalExpression class >> twoDigits: anInteger [
 	^ anInteger < 10 ifTrue: [ '0' , anInteger printString ] ifFalse: [ anInteger printString ]
 ]
 
+{ #category : 'icalendar' }
+RETemporalExpression class >> unfoldICalendarLines: aString [
+	"RFC 5545 content-line folding: a line may be split across multiple physical lines, where
+	every continuation line starts with a single space or tab that must be stripped and joined
+	to the previous line. Real files use CRLF; tolerate bare LF too."
+	| normalized physicalLines result |
+	normalized := aString copyReplaceAll: (String with: Character cr with: Character lf) with: (String with: Character lf).
+	normalized := normalized copyReplaceAll: (String with: Character cr) with: (String with: Character lf).
+	physicalLines := normalized substrings: (String with: Character lf).
+	result := OrderedCollection new.
+	physicalLines do: [ :line |
+		(line notEmpty and: [ (line first = Character space) or: [ line first = Character tab ] ])
+			ifTrue: [ result at: result size put: (result last , (line copyFrom: 2 to: line size)) ]
+			ifFalse: [ result add: line ] ].
+	^ result
+]
+
 { #category : 'rrule' }
 RETemporalExpression class >> unitForRRuleFreq: aFreqString [
 	aFreqString = 'WEEKLY' ifTrue: [ ^ #week ].
@@ -339,6 +460,40 @@ RETemporalExpression class >> weekdayForRRuleDayCode: aTwoLetterString [
 		at: 'MO' put: #Monday; at: 'TU' put: #Tuesday; at: 'WE' put: #Wednesday;
 		at: 'TH' put: #Thursday; at: 'FR' put: #Friday; at: 'SA' put: #Saturday; at: 'SU' put: #Sunday;
 		yourself) at: aTwoLetterString
+]
+
+{ #category : 'icalendar' }
+RETemporalExpression >> asICalendarStringWithUid: aUidString dtstamp: aDtstamp dtstart: aDtstart [
+	"A complete, standalone minimal .ics file (VCALENDAR wrapper around the VEVENT block)."
+	| crlf |
+	crlf := String with: Character cr with: Character lf.
+	^ String streamContents: [ :s |
+		s
+			nextPutAll: 'BEGIN:VCALENDAR'; nextPutAll: crlf;
+			nextPutAll: 'VERSION:2.0'; nextPutAll: crlf;
+			nextPutAll: 'PRODID:-//RecurringEvents//EN'; nextPutAll: crlf;
+			nextPutAll: (self asICalendarVEventStringWithUid: aUidString dtstamp: aDtstamp dtstart: aDtstart); nextPutAll: crlf;
+			nextPutAll: 'END:VCALENDAR' ]
+]
+
+{ #category : 'icalendar' }
+RETemporalExpression >> asICalendarVEventStringWithUid: aUidString dtstamp: aDtstamp dtstart: aDtstart [
+	| extracted ruleExpr exdates rdates lines crlf |
+	extracted := self class extractICalendarExceptionsFrom: self.
+	ruleExpr := extracted first. exdates := extracted second. rdates := extracted third.
+	lines := OrderedCollection new.
+	lines add: 'BEGIN:VEVENT'.
+	lines add: 'UID:' , aUidString.
+	lines add: 'DTSTAMP:' , (self class formatICalendarDateTime: aDtstamp).
+	lines add: 'DTSTART:' , (self class formatICalendarDateTime: aDtstart).
+	lines add: 'RRULE:' , ruleExpr asRRuleString.
+	exdates ifNotEmpty: [
+		lines add: 'EXDATE:' , ((exdates collect: [ :d | self class formatICalendarDateTime: d ]) inject: '' into: [ :a :b | a isEmpty ifTrue: [ b ] ifFalse: [ a , ',' , b ] ]) ].
+	rdates ifNotEmpty: [
+		lines add: 'RDATE:' , ((rdates collect: [ :d | self class formatICalendarDateTime: d ]) inject: '' into: [ :a :b | a isEmpty ifTrue: [ b ] ifFalse: [ a , ',' , b ] ]) ].
+	lines add: 'END:VEVENT'.
+	crlf := String with: Character cr with: Character lf.
+	^ String streamContents: [ :s | lines do: [ :l | s nextPutAll: l ] separatedBy: [ s nextPutAll: crlf ] ]
 ]
 
 { #category : 'json' }

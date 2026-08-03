@@ -22,6 +22,11 @@ REDateAndTimeExpression >> asJsonDict [
 ]
 
 { #category : 'accessing' }
+REDateAndTimeExpression >> dateAndTime [
+	^ dateAndTime
+]
+
+{ #category : 'accessing' }
 REDateAndTimeExpression >> dateAndTime: anObject [
 	dateAndTime := anObject
 ]
