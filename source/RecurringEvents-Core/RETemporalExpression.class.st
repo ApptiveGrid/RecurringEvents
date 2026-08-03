@@ -340,6 +340,12 @@ RETemporalExpression class >> parseRRuleParts: aString [
 	^ result
 ]
 
+{ #category : 'rrule-vendor' }
+RETemporalExpression class >> rruleByDayEntryCountIn: parts [
+	(parts includesKey: 'BYDAY') ifFalse: [ ^ 0 ].
+	^ ((parts at: 'BYDAY') substrings: ',') size
+]
+
 { #category : 'rrule' }
 RETemporalExpression class >> rruleDayCodeFor: aWeekdaySymbol [
 	^ (Dictionary new
@@ -508,24 +514,10 @@ RETemporalExpression >> asJsonString [
 
 { #category : 'rrule' }
 RETemporalExpression >> asRRuleString [
-	| components freqUnit interval wkst remaining untilExpr parts orderedKeys |
-	components := (self class = REIntersectionTemporalExpression)
-		ifTrue: [ self expressions asOrderedCollection ]
-		ifFalse: [ OrderedCollection with: self ].
-
-	freqUnit := nil. interval := 1. wkst := #Monday.
-	remaining := OrderedCollection new.
-	untilExpr := nil.
-	components do: [ :c |
-		(c isKindOf: REIntervalExpression)
-			ifTrue: [ freqUnit := c unit. interval := c interval. wkst := c wkst ]
-			ifFalse: [
-				(c isKindOf: REAbsoluteRangeExpression)
-					ifTrue: [ untilExpr := c ]
-					ifFalse: [ remaining add: c ] ] ].
-
-	parts := self class rruleFilterPartsFor: remaining.
-	freqUnit ifNil: [ freqUnit := self class inferRRuleFreqUnitFor: remaining ].
+	| decomposed freqUnit interval wkst parts untilExpr orderedKeys |
+	decomposed := self rruleComponents.
+	freqUnit := decomposed first. interval := decomposed second. wkst := decomposed third.
+	parts := decomposed fourth. untilExpr := decomposed fifth.
 
 	orderedKeys := #('BYMONTH' 'BYWEEKNO' 'BYYEARDAY' 'BYMONTHDAY' 'BYDAY' 'BYSETPOS').
 	^ String streamContents: [ :s |
@@ -549,4 +541,66 @@ RETemporalExpression >> nextOccurrence [
 { #category : 'as yet unclassified' }
 RETemporalExpression >> nextOccurrenceAfter: aDateAndTime [
 	self subclassResponsibility
+]
+
+{ #category : 'rrule' }
+RETemporalExpression >> rruleComponents [
+	"Shared decomposition used by both asRRuleString and rruleWarningsFor: - returns
+	{freqUnit. interval. wkst. parts (Dictionary of BYxxx-name -> value string). untilExpr or nil}."
+	| components freqUnit interval wkst remaining untilExpr parts |
+	components := (self class = REIntersectionTemporalExpression)
+		ifTrue: [ self expressions asOrderedCollection ]
+		ifFalse: [ OrderedCollection with: self ].
+
+	freqUnit := nil. interval := 1. wkst := #Monday.
+	remaining := OrderedCollection new.
+	untilExpr := nil.
+	components do: [ :c |
+		(c isKindOf: REIntervalExpression)
+			ifTrue: [ freqUnit := c unit. interval := c interval. wkst := c wkst ]
+			ifFalse: [
+				(c isKindOf: REAbsoluteRangeExpression)
+					ifTrue: [ untilExpr := c ]
+					ifFalse: [ remaining add: c ] ] ].
+
+	parts := self class rruleFilterPartsFor: remaining.
+	freqUnit ifNil: [ freqUnit := self class inferRRuleFreqUnitFor: remaining ].
+	^ { freqUnit. interval. wkst. parts. untilExpr }
+]
+
+{ #category : 'rrule-vendor' }
+RETemporalExpression >> rruleWarningsFor: aVendorSymbol [
+	"Advisory only - the RFC-faithful core (asRRuleString/asICalendarStringWithUid:dtstamp:dtstart:)
+	stays unchanged and always produces valid RFC 5545 output regardless of these warnings.
+	This just tells the caller which parts of THIS specific tree a given vendors own UI/API
+	cannot natively create or fully support, based on the vendor research in the decisions doc -
+	so callers can decide whether to warn a user, pick a different composition, or proceed anyway
+	knowing the resulting event may end up not fully editable in that vendors calendar app."
+	| decomposed freqUnit wkst parts warnings byDayCount |
+	decomposed := self rruleComponents.
+	freqUnit := decomposed first. wkst := decomposed third. parts := decomposed fourth.
+	warnings := OrderedCollection new.
+	byDayCount := self class rruleByDayEntryCountIn: parts.
+
+	(parts includesKey: 'BYSETPOS') ifTrue: [
+		byDayCount > 1
+			ifTrue: [
+				aVendorSymbol = #google ifTrue: [ warnings add: 'Google Calendar accepts BYSETPOS combined with multiple BYDAY weekdays on import, but its own UI cannot create or edit such a series (edit-lock risk).' ].
+				aVendorSymbol = #apple ifTrue: [ warnings add: 'Apple EventKit supports generic multi-weekday BYSETPOS at the API level (EKRecurrenceRule.setPositions), but Calendar.app''s UI can only author single-weekday ordinal patterns, not this one.' ].
+				aVendorSymbol = #outlook ifTrue: [ warnings add: 'Outlook/Microsoft Graph has no generic BYSETPOS equivalent - its relativeMonthly pattern only supports a single day-of-week selection (multiple BYDAY values would only use the first match). This rule cannot be represented correctly for Outlook.' ] ]
+			ifFalse: [
+				aVendorSymbol = #outlook ifTrue: [ "single-weekday BYSETPOS/ordinal BYDAY is fine - Outlook's relativeMonthly index+daysOfWeek covers exactly this case" ] ] ].
+
+	((parts includesKey: 'BYYEARDAY') or: [ parts includesKey: 'BYWEEKNO' ]) ifTrue: [
+		| featureName |
+		featureName := (parts includesKey: 'BYYEARDAY') ifTrue: [ 'BYYEARDAY' ] ifFalse: [ 'BYWEEKNO' ].
+		aVendorSymbol = #google ifTrue: [ warnings add: featureName , ' has no Google Calendar UI support - importable, but not creatable or editable there.' ].
+		aVendorSymbol = #apple ifTrue: [ warnings add: featureName , ' is API-only in Apple EventKit (daysOfTheYear/weeksOfTheYear, yearly only) - no Calendar.app UI path to author or edit it.' ].
+		aVendorSymbol = #outlook ifTrue: [ warnings add: featureName , ' has no equivalent at all in Outlook/Microsoft Graph - this rule cannot be represented for Outlook interop.' ] ].
+
+	(freqUnit = #week and: [ wkst ~= #Monday and: [ byDayCount > 1 ] ]) ifTrue: [
+		aVendorSymbol = #google ifTrue: [ warnings add: 'Google Calendar does not expose or apply a non-default WKST - a multi-weekday weekly INTERVAL rule with WKST ~= Monday may be interpreted differently there (or simply not be UI-editable as authored).' ].
+		aVendorSymbol = #apple ifTrue: [ warnings add: 'Apple EventKits firstDayOfTheWeek is read-only - there is no way to author a non-default WKST via the API at all, so this rule cannot be faithfully represented for Apple.' ] ].
+
+	^ warnings
 ]
