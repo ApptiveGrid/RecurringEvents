@@ -106,6 +106,18 @@ RETemporalExpressionJsonTest >> testIntersectionRoundTrip [
 ]
 
 { #category : 'tests' }
+RETemporalExpressionJsonTest >> testIntervalFromJsonWithoutWkstDefaultsToMonday [
+	"Backward compatibility: payloads produced before WKST support (roadmap point 1) had
+	no wkst field at all - they must still parse, defaulting to RFC 5545s own Monday default."
+	| dict roundtripped |
+	dict := Dictionary new.
+	dict at: 'type' put: 'interval'; at: 'start' put: (DateAndTime year: 2026 month: 1 day: 1) asString;
+		at: 'unit' put: 'month'; at: 'interval' put: 3.
+	roundtripped := RETemporalExpression fromJsonDict: dict.
+	self assert: roundtripped wkst equals: #Monday
+]
+
+{ #category : 'tests' }
 RETemporalExpressionJsonTest >> testIntervalRoundTrip [
 	| start expr roundtripped |
 	start := DateAndTime year: 2026 month: 1 day: 1.
@@ -114,6 +126,16 @@ RETemporalExpressionJsonTest >> testIntervalRoundTrip [
 	self assert: roundtripped class equals: REIntervalExpression.
 	self assert: (roundtripped includes: (DateAndTime year: 2026 month: 4 day: 1)).
 	self deny: (roundtripped includes: (DateAndTime year: 2026 month: 2 day: 1))
+]
+
+{ #category : 'tests' }
+RETemporalExpressionJsonTest >> testIntervalRoundTripIncludesWkst [
+	| start expr roundtripped |
+	start := DateAndTime year: 2026 month: 8 day: 4.
+	expr := REIntervalExpression new start: start unit: #week interval: 2; wkst: #Sunday; yourself.
+	roundtripped := RETemporalExpression fromJsonString: expr asJsonString.
+	self assert: roundtripped class equals: REIntervalExpression.
+	self assert: roundtripped wkst equals: #Sunday
 ]
 
 { #category : 'tests' }

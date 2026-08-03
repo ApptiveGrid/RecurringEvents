@@ -106,6 +106,46 @@ REIntervalExpressionTest >> testWeekIntervalCalendarAware [
 ]
 
 { #category : 'tests' }
+REIntervalExpressionTest >> testWkstChangesWeekGroupingForMultiWeekdayInterval [
+	"The classic RFC 5545 WKST example: FREQ=WEEKLY;INTERVAL=2;BYDAY=TU,SU behaves
+	differently depending on WKST, because whether a Sunday belongs to the same
+	week as the preceding Tuesday depends on which day starts the week."
+	| start tueSun mondayWkst sundayWkst comboMon comboSun |
+	start := DateAndTime year: 2026 month: 8 day: 4. "a Tuesday"
+	tueSun := REDayInWeekExpression new weekdays: #(#Tuesday #Sunday).
+	mondayWkst := REIntervalExpression new start: start unit: #week interval: 2.
+	sundayWkst := REIntervalExpression new start: start unit: #week interval: 2; wkst: #Sunday; yourself.
+	comboMon := REIntersectionTemporalExpression new expressions: { mondayWkst. tueSun }.
+	comboSun := REIntersectionTemporalExpression new expressions: { sundayWkst. tueSun }.
+	self assert: (comboMon includes: (DateAndTime year: 2026 month: 8 day: 9)). "Sun +5d: same week as the Tue under WKST=MO"
+	self deny: (comboSun includes: (DateAndTime year: 2026 month: 8 day: 9)). "...but a new week under WKST=SU"
+	self deny: (comboMon includes: (DateAndTime year: 2026 month: 8 day: 16)). "Sun +12d: next pair-week under WKST=MO"
+	self assert: (comboSun includes: (DateAndTime year: 2026 month: 8 day: 16))
+]
+
+{ #category : 'tests' }
+REIntervalExpressionTest >> testWkstDefaultsToMonday [
+	| expr |
+	expr := REIntervalExpression new start: (DateAndTime year: 2026 month: 8 day: 4) unit: #week interval: 2.
+	self assert: expr wkst equals: #Monday
+]
+
+{ #category : 'tests' }
+REIntervalExpressionTest >> testWkstDoesNotAffectSingleWeekdayInterval [
+	"A single BYDAY value is insensitive to WKST - every-2-weeks-on-Tuesday means the
+	same thing regardless of which day starts the week."
+	| start tue mondayWkst sundayWkst comboMon comboSun dates |
+	start := DateAndTime year: 2026 month: 8 day: 4.
+	tue := REDayInWeekExpression new weekdays: #(#Tuesday).
+	mondayWkst := REIntervalExpression new start: start unit: #week interval: 2.
+	sundayWkst := REIntervalExpression new start: start unit: #week interval: 2; wkst: #Sunday; yourself.
+	comboMon := REIntersectionTemporalExpression new expressions: { mondayWkst. tue }.
+	comboSun := REIntersectionTemporalExpression new expressions: { sundayWkst. tue }.
+	dates := { start. start + (Duration days: 7). start + (Duration days: 14). start + (Duration days: 21) }.
+	self assert: (dates collect: [:d | comboMon includes: d]) equals: (dates collect: [:d | comboSun includes: d])
+]
+
+{ #category : 'tests' }
 REIntervalExpressionTest >> testYearIntervalHandlesVariableMonthLengths [
 	| start expr |
 	start := DateAndTime year: 2024 month: 1 day: 1. "a leap year, deliberately"
