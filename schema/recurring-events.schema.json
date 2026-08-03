@@ -14,6 +14,7 @@
         { "$ref": "#/$defs/dayInMonth" },
         { "$ref": "#/$defs/rangeEachYear" },
         { "$ref": "#/$defs/interval" },
+        { "$ref": "#/$defs/absoluteRange" },
         { "$ref": "#/$defs/union" },
         { "$ref": "#/$defs/intersection" },
         { "$ref": "#/$defs/difference" }
@@ -155,6 +156,18 @@
         "interval": { "type": "integer", "minimum": 1 }
       },
       "required": ["type", "start", "unit", "interval"],
+      "additionalProperties": false
+    },
+
+    "absoluteRange": {
+      "description": "An absolute (non-recurring) time window [from, to) - includes every date in the range, used to clip a recurring expression rather than to recur itself, e.g. to change a series this-and-future without rebuilding the old rule. Either bound may be omitted for an open end. Maps to REAbsoluteRangeExpression.",
+      "type": "object",
+      "properties": {
+        "type": { "const": "absoluteRange" },
+        "from": { "type": "string", "format": "date-time" },
+        "to": { "type": "string", "format": "date-time" }
+      },
+      "required": ["type"],
       "additionalProperties": false
     },
 
