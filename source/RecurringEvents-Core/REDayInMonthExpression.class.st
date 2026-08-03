@@ -37,6 +37,11 @@ REDayInMonthExpression >> asJsonDict [
 ]
 
 { #category : 'accessing' }
+REDayInMonthExpression >> day [
+	^ day
+]
+
+{ #category : 'accessing' }
 REDayInMonthExpression >> day: anInteger [
 	"Matches a fixed calendar day number of the month, e.g. 1 for the 1st.
 	A negative number counts from the end of the month (-1 = last day)."
@@ -68,6 +73,11 @@ REDayInMonthExpression >> includesByOrdinalWeekday: aDateAndTime [
 ]
 
 { #category : 'accessing' }
+REDayInMonthExpression >> ordinal [
+	^ ordinal
+]
+
+{ #category : 'accessing' }
 REDayInMonthExpression >> ordinal: anInteger weekday: aSymbol [
 	"Matches the anInteger-th occurrence of aSymbol (e.g. #Thursday) in the month.
 	A negative ordinal counts from the end of the month (-1 = last such weekday)."
@@ -85,4 +95,9 @@ REDayInMonthExpression >> printOn: aStream [
 			aStream nextPutAll: ' the '.
 			aStream print: ordinal.
 			aStream nextPutAll: ' ' , weekday ]
+]
+
+{ #category : 'accessing' }
+REDayInMonthExpression >> weekday [
+	^ weekday
 ]
