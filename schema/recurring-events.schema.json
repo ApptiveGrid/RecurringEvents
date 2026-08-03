@@ -13,6 +13,7 @@
         { "$ref": "#/$defs/monthInYear" },
         { "$ref": "#/$defs/dayInMonth" },
         { "$ref": "#/$defs/rangeEachYear" },
+        { "$ref": "#/$defs/interval" },
         { "$ref": "#/$defs/union" },
         { "$ref": "#/$defs/intersection" },
         { "$ref": "#/$defs/difference" }
@@ -141,6 +142,19 @@
         "end": { "$ref": "#/$defs/monthDay" }
       },
       "required": ["type", "start", "end"],
+      "additionalProperties": false
+    },
+
+    "interval": {
+      "description": "Calendar-aware RFC 5545 INTERVAL: includes every date whose `unit`-period (week/month/year), counted from `start`, is a multiple of `interval` steps away. Unlike `duration`, month/year periods have variable length (handled via calendar arithmetic, not a fixed elapsed duration) - e.g. `unit: \"month\", interval: 3, start: 2026-01-01` includes the whole of January, April, July, October regardless of day-of-month; combine with `dayInMonth`/`dayInWeek` via `intersection` to pick a specific day within those periods, e.g. \"every 3 months on the 1st\". Maps to REIntervalExpression.",
+      "type": "object",
+      "properties": {
+        "type": { "const": "interval" },
+        "start": { "type": "string", "format": "date-time" },
+        "unit": { "type": "string", "enum": ["week", "month", "year"] },
+        "interval": { "type": "integer", "minimum": 1 }
+      },
+      "required": ["type", "start", "unit", "interval"],
       "additionalProperties": false
     },
 
