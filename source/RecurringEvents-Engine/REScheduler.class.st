@@ -5,7 +5,8 @@ Class {
 		'process',
 		'processSemaphore',
 		'schedule',
-		'valueBlock'
+		'valueBlock',
+		'lastAnnouncement'
 	],
 	#category : 'RecurringEvents-Engine',
 	#package : 'RecurringEvents-Engine'
@@ -58,14 +59,30 @@ REScheduler >> nextOccurrence [
 	^ schedule nextOccurrence 
 ]
 
+{ #category : 'running' }
+REScheduler >> announce: aString [
+	"once per change, not once per wait. The loop wakes at least every five seconds,
+	so a line per turn is some seventeen thousand a day per scheduler, and nearly
+	every one of them repeats what the line before it said. What is worth reading is
+	the moment the answer changed - the first idle turn, and each new next
+	occurrence, which carries its own time and so differs whenever it moves."
+	lastAnnouncement = aString ifTrue: [ ^ self ].
+	lastAnnouncement := aString.
+	Transcript
+		show: aString;
+		cr
+]
+
 { #category : 'as yet unclassified' }
 REScheduler >> processNextOccurrence [
 	| duration evaluationTime nextTime |
 	schedule isEmpty ifTrue: [
-			Transcript
-				show: 'repository is empty. waiting....';
-				cr.
-			processSemaphore waitTimeoutMSecs: self maxWaitTime asMilliSeconds.
+			self announce: 'nothing scheduled, sleeping until something is'.
+			"no timeout: with nothing scheduled there is nothing a timer could find, so
+			the loop stops rather than waking every five seconds to say so again.
+			#addItem: signals this semaphore, and a semaphore counts its signals - one
+			arriving between the emptiness check and this wait is not lost"
+			processSemaphore wait.
 			^ self ].
 	evaluationTime := DateAndTime now.
 	schedule nextOccuringItemDo: [ :item :occurrence |
@@ -75,11 +92,7 @@ REScheduler >> processNextOccurrence [
 						duration := occurrence - evaluationTime.
 						nextTime := occurrence ] ].
 	duration ifNotNil: [
-			Transcript
-				show:
-					'next occurrence on ' , nextTime rounded asString , ' waiting '
-					, duration asString;
-				cr.
+			self announce: 'next occurrence on ' , nextTime rounded asString.
 			processSemaphore waitTimeoutMilliseconds:
 				(duration asMilliSeconds min: self maxWaitTime asMilliSeconds) ]
 ]
