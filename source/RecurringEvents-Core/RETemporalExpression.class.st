@@ -161,7 +161,7 @@ RETemporalExpression class >> fromJsonDict: aDict [
 
 { #category : 'json' }
 RETemporalExpression class >> fromJsonString: aString [
-	^ self fromJsonDict: (NeoJSONReader fromString: aString)
+	^ self fromJsonDict: (STONJSON fromString: aString)
 ]
 
 { #category : 'rrule' }
@@ -509,7 +509,7 @@ RETemporalExpression >> asJsonDict [
 
 { #category : 'json' }
 RETemporalExpression >> asJsonString [
-	^ NeoJSONWriter toString: self asJsonDict
+	^ STONJSON toString: self asJsonDict
 ]
 
 { #category : 'rrule' }
