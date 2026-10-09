@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        pharoversion: [ Pharo64-alpha, Pharo64-13, Pharo64-12 ]
+        pharoversion: [ Pharo64-14, Pharo64-13, Pharo64-12 ]
     name: ${{ matrix.pharoversion }}
     steps:
       - uses: actions/checkout@v2
