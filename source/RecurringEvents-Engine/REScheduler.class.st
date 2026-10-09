@@ -49,6 +49,22 @@ REScheduler >> initialize [
 	processSemaphore := Semaphore new.
 ]
 
+{ #category : 'testing' }
+REScheduler >> isRunning [
+	"whether the loop still turns, for a health check to ask. Having a process is
+	not enough: #start forks one and #stop forgets it, but a process that ran into
+	an error outside #evaluateItem: is still held here - #start passes the error
+	on, and whatever handles it last decides whether the process ends or stays
+	suspended under a debugger. Either way nothing comes due any more, and #start
+	would not replace it.
+
+	Waiting is running. With nothing scheduled the loop waits on the semaphore
+	without a timeout, and a process blocked there is neither terminated nor
+	suspended"
+	^ process notNil and: [
+		process isTerminated not and: [ process isSuspended not ] ]
+]
+
 { #category : 'accessing' }
 REScheduler >> maxWaitTime [
 	^ Duration seconds: 5
