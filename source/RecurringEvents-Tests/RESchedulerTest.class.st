@@ -68,3 +68,34 @@ RESchedulerTest >> testProcessNextOccurrenceEvaluatesDueItem [
 	scheduler processNextOccurrence.
 	self assert: executed
 ]
+
+{ #category : 'tests' }
+RESchedulerTest >> testIsRunningFollowsTheProcess [
+	"an empty schedule leaves the loop waiting on its semaphore, and that has to
+	count as running - it is where a scheduler with nothing to do spends its life"
+	| scheduler |
+	scheduler := REScheduler new schedule: REScheduleMemory new.
+	self deny: scheduler isRunning.
+	[
+		scheduler start.
+		Processor yield.
+		self assert: scheduler isRunning ]
+		ensure: [ scheduler stop ].
+	self deny: scheduler isRunning
+]
+
+{ #category : 'tests' }
+RESchedulerTest >> testIsRunningIsFalseForAStoppedProcess [
+	"what an error the loop passes on can leave behind: the process still held,
+	and nothing turning"
+	| scheduler |
+	scheduler := REScheduler new schedule: REScheduleMemory new.
+	[
+		scheduler start.
+		Processor yield.
+		(scheduler instVarNamed: #process) suspend.
+		self deny: scheduler isRunning.
+		(scheduler instVarNamed: #process) terminate.
+		self deny: scheduler isRunning ]
+		ensure: [ scheduler stop ]
+]
