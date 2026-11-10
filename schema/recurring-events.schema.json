@@ -262,6 +262,20 @@
       },
       "required": ["type", "included", "excluded"],
       "additionalProperties": false
+    },
+
+    "recurrence": {
+      "description": "A rule that repeats from an anchor in a time zone, like DTSTART;TZID=... followed by an RRULE in RFC 5545. Not a temporal expression and not reachable from the root: refer to it as #/$defs/recurrence. `start` is the anchor in the form of RFC 9557, a local date and time, optionally its offset, and the zone id in brackets, e.g. \"2026-11-09T09:00:00+01:00[Europe/Berlin]\"; it gives the first day, the time of day and the zone. The pattern only asks for the zone in brackets at the end, in a form the Pharo validator understands too; RERecurrence class>>fromJsonString: reads the rest strictly. `rule` says which days; dates inside it are local times in that zone, written with offset +00:00. Without `rule` the anchor is the only occurrence. Maps to RERecurrence (asJsonString / class>>fromJsonString:).",
+      "type": "object",
+      "properties": {
+        "start": {
+          "type": "string",
+          "pattern": "\\[.+\\]$"
+        },
+        "rule": { "$ref": "#/$defs/temporalExpression" }
+      },
+      "required": ["start"],
+      "additionalProperties": false
     }
   }
 }
