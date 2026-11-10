@@ -3,8 +3,7 @@ Class {
 	#superclass : 'Object',
 	#instVars : [
 		'itemsSemaphore',
-		'activeItem',
-		'origin'
+		'activeItem'
 	],
 	#category : 'RecurringEvents-Engine',
 	#package : 'RecurringEvents-Engine'
@@ -13,15 +12,6 @@ Class {
 { #category : 'adding' }
 RESchedule >> addItem: item [
 	Transcript show: 'adding element: ' , item asString; cr.
-]
-
-{ #category : 'ston' }
-RESchedule >> asOccurrenceRegistration [
-	"The STON payload that crosses from this schedule-holder to the (local or remote)
-	scheduler: just the origin identity and the single next occurrence across all items -
-	never the items/temporal expressions themselves. Answers nil if nothing is scheduled."
-	self nextOccurrence ifNil: [ ^ nil ].
-	^ REOccurrenceRegistration origin: origin nextOccurrence: self nextOccurrence
 ]
 
 { #category : 'initialization' }
@@ -86,16 +76,6 @@ RESchedule >> on: dateAndTime sendMessage: selector to: object [
 		event: (REEventMessageSend new
 			object: object;
 			selector: selector ))
-]
-
-{ #category : 'accessing' }
-RESchedule >> origin [
-	^ origin
-]
-
-{ #category : 'accessing' }
-RESchedule >> origin: anObject [
-	origin := anObject
 ]
 
 { #category : 'enumerating' }
